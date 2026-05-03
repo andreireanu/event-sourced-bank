@@ -39,6 +39,11 @@ type MoneyWithdrawn struct {
 
 type DomainEvent interface {
 	isEvent()
+	GetAccountID() uuid.UUID
 }
 
 func (event Event) isEvent() {}
+
+func (event Event) GetAccountID() uuid.UUID {
+	return event.AccountID
+}

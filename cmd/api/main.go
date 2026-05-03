@@ -2,6 +2,7 @@ package main
 
 import (
 	"bank/domain"
+	"bank/store"
 	"fmt"
 	"github.com/google/uuid"
 	"time"
@@ -39,7 +40,7 @@ func main() {
 			Type:      domain.EventMoneyWithdrawn,
 			Timestamp: time.Now(),
 		},
-		Amount: 50,
+		Amount: 150,
 	}
 
 	events = append(events, accountCreated)
@@ -49,5 +50,7 @@ func main() {
 	account, err := domain.LoadAccount(events)
 	if err == nil {
 		fmt.Println("&v+\n", account)
+	} else {
+		fmt.Println(err)
 	}
 }
