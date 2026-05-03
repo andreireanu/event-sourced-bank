@@ -15,7 +15,7 @@ const (
 
 type Event struct {
 	ID        uuid.UUID
-	AccountId uuid.UUID
+	AccountID uuid.UUID
 	Type      EventType
 	Timestamp time.Time
 }
@@ -36,3 +36,9 @@ type MoneyWithdrawn struct {
 	Event
 	Amount uint64
 }
+
+type DomainEvent interface {
+	isEvent()
+}
+
+func (event Event) isEvent() {}
