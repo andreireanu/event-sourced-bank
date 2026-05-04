@@ -2,6 +2,7 @@ package store
 
 import (
 	"bank/domain"
+	"errors"
 	"github.com/google/uuid"
 )
 
@@ -23,4 +24,13 @@ func (memoryStore *MemoryStore) Save(event domain.DomainEvent) error {
 		memoryStore.Map[id] = []domain.DomainEvent{event}
 	}
 	return nil
+}
+
+func (memoryStore *MemoryStore) Load(id uuid.UUID) ([]domain.DomainEvent, error) {
+	mp, ok := memoryStore.Map[id]
+	if !ok {
+		return nil, errors.New("Wrong ID on Loading events")
+	}
+	return mp, nil
+
 }
