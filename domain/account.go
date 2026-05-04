@@ -50,3 +50,23 @@ func LoadAccount(events []DomainEvent) (Account, error) {
 	}
 	return account, nil
 }
+
+func (account *Account) Deposit(amount uint64) error {
+	if account.Status != StatusActive {
+		return errors.New("Account not active")
+	}
+	if amount > 100000 {
+		return errors.New("Amount too high for a single transaction")
+	}
+	return nil
+}
+
+func (account *Account) Withdraw(amount uint64) error {
+	if account.Status != StatusActive {
+		return errors.New("Account not active")
+	}
+	if amount > account.Balance {
+		return errors.New("Insufficient amoun to withdraw")
+	}
+	return nil
+}
