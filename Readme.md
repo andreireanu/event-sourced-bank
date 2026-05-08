@@ -127,3 +127,8 @@ Questions:
   as bonus features in the spec — understand the problem   
   before optimizing it.
 
+
+  ### Testing:
+  Create account: curl -X POST localhost:8090/accounts -d '{"name": "Alice", "amount": 1000}' -> This creates an account with deterministic uuid 
+  Deposit amount: curl -X POST localhost:8090/accounts/9750dcc2-516e-5ea0-8a26-54fa6ff6986b/deposit -d '{"amount":  
+  500}' -> Deposit command

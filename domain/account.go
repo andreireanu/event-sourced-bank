@@ -13,6 +13,9 @@ const (
 	StatusClosed Status = "Closed"
 )
 
+var ErrInsufficientFunds = errors.New("Insufficient funds")
+var ErrAmountTooHigh = errors.New("Amount too high too withdraw")
+
 type Account struct {
 	ID      uuid.UUID
 	No      uint64
@@ -56,7 +59,7 @@ func (account *Account) Deposit(amount uint64) error {
 		return errors.New("Account not active")
 	}
 	if amount > 100000 {
-		return errors.New("Amount too high for a single transaction")
+		return ErrAmountTooHigh
 	}
 	return nil
 }
@@ -66,7 +69,7 @@ func (account *Account) Withdraw(amount uint64) error {
 		return errors.New("Account not active")
 	}
 	if amount > account.Balance {
-		return errors.New("Insufficient amoun to withdraw")
+		return ErrInsufficientFunds
 	}
 	return nil
 }

@@ -31,7 +31,8 @@ func NewCommandHandler(memoryStore *store.MemoryStore) CommandHandler {
 }
 
 func (comHandler *CommandHandler) CreateAccount(cmd CreateAccountCommand) (uuid.UUID, uint64, error) {
-	accountID := uuid.New()
+	// accountID := uuid.New()
+	accountID := uuid.NewSHA1(uuid.NameSpaceURL, []byte("alice"))
 	accountNo := rand.Uint64() % 100_000_000
 	accountCreated := domain.AccountCreated{
 		Event: domain.Event{
