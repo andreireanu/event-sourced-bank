@@ -4,13 +4,13 @@ import (
 	"bank/domain"
 	"bank/store"
 	"github.com/google/uuid"
+	"math/rand"
 	"time"
 )
 
 type CreateAccountCommand struct {
-	Name      string
-	Amount    uint64
-	AccountNo uint64
+	Name   string `json:"name"`
+	Amount uint64 `json:"amount"`
 }
 
 type DepositCommand struct {
@@ -30,8 +30,9 @@ func NewCommandHandler(memoryStore *store.MemoryStore) CommandHandler {
 	return CommandHandler{MemoryStore: memoryStore}
 }
 
-func (comHandler *CommandHandler) CreateAccount(cmd CreateAccountCommand) (uuid.UUID, error) {
+func (comHandler *CommandHandler) CreateAccount(cmd CreateAccountCommand) (uuid.UUID, uint64, error) {
 	accountID := uuid.New()
+	accountNo := rand.Uint64() % 100_000_000
 	accountCreated := domain.AccountCreated{
 		Event: domain.Event{
 			ID:        uuid.New(),
@@ -40,11 +41,11 @@ func (comHandler *CommandHandler) CreateAccount(cmd CreateAccountCommand) (uuid.
 			Timestamp: time.Now(),
 		},
 		Name:   cmd.Name,
-		No:     cmd.AccountNo,
+		No:     accountNo,
 		Amount: cmd.Amount,
 	}
 	ok := comHandler.MemoryStore.Save(accountCreated)
-	return accountID, ok
+	return accountID, accountNo, ok
 }
 
 func (comHandler *CommandHandler) Deposit(cmd DepositCommand) error {
