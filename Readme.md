@@ -1,3 +1,51 @@
+# Event-Sourced Bank
+
+A learning project implementing a simple banking API in Go using **CQRS** (Command Query Responsibility Segregation) and **Event Sourcing** patterns.
+
+## What it does
+
+- Create bank accounts with an initial balance
+- Deposit and withdraw money with business rule enforcement
+- Query current account state by replaying all past events
+
+## Architecture
+
+- **Domain** (`domain/`) — account aggregate, business rules, event definitions
+- **Store** (`store/`) — in-memory event store (events keyed by account UUID)
+- **Handlers** (`handlers/`) — command handlers (write) and query handlers (read)
+- **API** (`cmd/api/`) — HTTP server wiring handlers to REST endpoints
+
+State is never stored directly — it is always derived by replaying the full event history for an account.
+
+## Running
+
+```
+go run ./cmd/api/
+```
+
+## Testing
+
+Create account:
+```
+curl -X POST localhost:8090/accounts -d '{"name": "Alice", "amount": 1000}'
+```
+
+Deposit amount:
+```
+curl -X POST localhost:8090/accounts/9750dcc2-516e-5ea0-8a26-54fa6ff6986b/deposit -d '{"amount": 500}'
+```
+
+Withdraw amount:
+```
+curl -X POST localhost:8090/accounts/9750dcc2-516e-5ea0-8a26-54fa6ff6986b/withdraw -d '{"amount": 200}'
+```
+
+Query account state:
+```
+curl -X GET localhost:8090/accounts/9750dcc2-516e-5ea0-8a26-54fa6ff6986b/query
+```
+
+
 Questions: 
 1. CQRS segregation is needed because we need atomic like operation on critical system like banking? Query reads state and can't modify
 
@@ -127,8 +175,3 @@ Questions:
   as bonus features in the spec — understand the problem   
   before optimizing it.
 
-
-  ### Testing:
-  Create account: curl -X POST localhost:8090/accounts -d '{"name": "Alice", "amount": 1000}' -> This creates an account with deterministic uuid 
-  Deposit amount: curl -X POST localhost:8090/accounts/9750dcc2-516e-5ea0-8a26-54fa6ff6986b/deposit -d '{"amount":  
-  500}' -> Deposit command

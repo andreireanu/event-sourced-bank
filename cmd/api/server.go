@@ -64,8 +64,8 @@ func (server *Server) CreateAccount(w http.ResponseWriter, req *http.Request) {
 
 func (server *Server) Deposit(w http.ResponseWriter, req *http.Request) {
 	requestID := uuid.NewString()
-	id := req.PathValue("id")
-	log.Printf("[%s] Attempting to deposit for account id %s", requestID, id)
+	id_string := req.PathValue("id")
+	log.Printf("[%s] Attempting to deposit for account id %s", requestID, id_string)
 
 	method := req.Method
 	if method != "POST" {
@@ -82,9 +82,9 @@ func (server *Server) Deposit(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	cmd.AccountID, ok = uuid.Parse(id)
+	cmd.AccountID, ok = uuid.Parse(id_string)
 	if ok != nil {
-		log.Printf("[%s] Error parsing account id: %s, error: %s", requestID, id, ok)
+		log.Printf("[%s] Error parsing account id: %s, error: %s", requestID, id_string, ok)
 		http.Error(w, "Failed to deposit into account", http.StatusInternalServerError)
 		return
 	}
@@ -92,12 +92,12 @@ func (server *Server) Deposit(w http.ResponseWriter, req *http.Request) {
 	ok = server.commands.Deposit(cmd)
 	switch {
 	case errors.Is(ok, domain.ErrAmountTooHigh):
-		log.Printf("[%s] Error depositing to account id: %s, error: amount too high to withdraw", requestID, id)
+		log.Printf("[%s] Error depositing to account id: %s, error: amount too high to withdraw", requestID, id_string)
 		http.Error(w, "Failed to deposit to account, amount too high", http.StatusBadRequest)
 		return
 
 	case ok != nil:
-		log.Printf("[%s] Cannot deposit to account: %s, error: %s", requestID, id, ok)
+		log.Printf("[%s] Cannot deposit to account: %s, error: %s", requestID, id_string, ok)
 		http.Error(w, "Failed to deposit into account", http.StatusInternalServerError)
 		return
 	}
@@ -105,18 +105,18 @@ func (server *Server) Deposit(w http.ResponseWriter, req *http.Request) {
 	response := map[string]string{
 		"status":  "success",
 		"message": "Received message",
-		"body":    "Deposited to account with id " + id + " amount " + strconv.FormatUint(cmd.Amount, 10),
+		"body":    "Deposited to account with id " + id_string + " amount " + strconv.FormatUint(cmd.Amount, 10),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(response)
-	log.Printf("[%s] Deposited to account with id %s amount %s", requestID, id, strconv.FormatUint(cmd.Amount, 10))
+	log.Printf("[%s] Deposited to account with id %s amount %s", requestID, id_string, strconv.FormatUint(cmd.Amount, 10))
 }
 
 func (server *Server) Withdraw(w http.ResponseWriter, req *http.Request) {
 	requestID := uuid.New()
-	id := req.PathValue("id")
+	id_string := req.PathValue("id")
 
 	method := req.Method
 	if method != "POST" {
@@ -134,13 +134,13 @@ func (server *Server) Withdraw(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	id_string, ok := uuid.Parse(id)
+	id, ok := uuid.Parse(id_string)
 	if ok != nil {
 		log.Printf("[%s] Error parsing account id: %s, error: %s", requestID, id, ok)
 		http.Error(w, "Failed to withdraw from account", http.StatusInternalServerError)
 		return
 	}
-	cmd.AccountID = id_string
+	cmd.AccountID = id
 
 	ok = server.commands.Withdraw(cmd)
 	switch {
@@ -157,7 +157,7 @@ func (server *Server) Withdraw(w http.ResponseWriter, req *http.Request) {
 	response := map[string]string{
 		"status":  "success",
 		"message": "Received message",
-		"body":    "Withdrawn from account with id " + id + " amount " + strconv.FormatUint(cmd.Amount, 10),
+		"body":    "Withdrawn from account with id " + id_string + " amount " + strconv.FormatUint(cmd.Amount, 10),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -166,11 +166,57 @@ func (server *Server) Withdraw(w http.ResponseWriter, req *http.Request) {
 	log.Printf("[%s] Withdrawn from account with id %s amount %s", requestID, id, strconv.FormatUint(cmd.Amount, 10))
 }
 
+func (server *Server) GetAccount(w http.ResponseWriter, req *http.Request) {
+	requestID := uuid.New()
+
+	method := req.Method
+	if method != "GET" {
+		log.Printf("[%s] Method not allowed: %s", requestID, method)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	id_string := req.PathValue("id")
+	id, ok := uuid.Parse(id_string)
+	if ok != nil {
+		log.Printf("[%s] Error parsing account id: %s, error: %s", requestID, id, ok)
+		http.Error(w, "Failed to withdraw from account", http.StatusInternalServerError)
+		return
+	}
+
+	query := handlers.AccountQuery{AccountID: id}
+	account, ok := server.queries.GetAccount(query)
+	if ok != nil {
+		log.Printf("[%s] Error loading account: %s, error: %s", requestID, id, ok)
+		http.Error(w, "Failed to load account", http.StatusInternalServerError)
+		return
+	}
+	data, ok := json.Marshal(account)
+	if ok != nil {
+		log.Printf("[%s] Error serializing account: %s, error: %s", requestID, id, ok)
+		http.Error(w, "Failed to serialize account", http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]string{
+		"status":  "success",
+		"message": "Received message",
+		"body":    "Succesfully loaded account %s" + id_string,
+		"data":    string(data),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(response)
+	log.Printf("[%s] Queried from account with id %s", requestID, id)
+}
+
 func (server *Server) Start() {
 
 	http.HandleFunc("/accounts", server.CreateAccount)
 	http.HandleFunc("/accounts/{id}/deposit", server.Deposit)
 	http.HandleFunc("/accounts/{id}/withdraw", server.Withdraw)
+	http.HandleFunc("/accounts/{id}/query", server.GetAccount)
 
 	fmt.Println("Server starting on :8090")
 	err := http.ListenAndServe(":8090", nil)
